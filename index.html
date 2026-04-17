@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<!--
+Created using JS Bin
+http://jsbin.com
+
+Copyright (c) 2026 by anonymous (http://jsbin.com/zulakuzadi/1/edit)
+
+Released under the MIT license: http://jsbin.mit-license.org
+-->
+<meta name="robots" content="noindex">
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>科幻電子碼錶</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+TC:wght@300;500;700&display=swap');
+
+        :root {
+            --neon-blue: #00d2ff;
+            --deep-blue: #0f172a;
+            --metal-gradient: linear-gradient(145deg, #1e293b, #0f172a);
+        }
+
+        body {
+            background-color: #020617;
+            color: #fff;
+            font-family: 'Noto Sans TC', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        /* 整個應用容器 */
+        .app-window {
+            position: relative;
+            background: #111827;
+            width: 500px;
+            height: 500px;
+            border-radius: 40px;
+            box-shadow: 0 50px 100px rgba(0,0,0,0.8);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #1e293b;
+            overflow: hidden;
+        }
+
+        /* 背景裝飾 */
+        .grid-bg {
+            position: absolute;
+            inset: 0;
+            background-image: radial-gradient(circle at 50% 50%, #1e293b 1px, transparent 1px);
+            background-size: 20px 20px;
+            opacity: 0.2;
+            z-index: 0;
+        }
+
+        /* 碼錶本體 */
+        .stopwatch-frame {
+            position: relative;
+            width: 380px;
+            height: 380px;
+            z-index: 10;
+        }
+
+        /* 頂部旋鈕與按鈕 (參考圖中精緻感) */
+        .top-parts {
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .crown-main {
+            width: 50px;
+            height: 40px;
+            background: linear-gradient(to right, #334155, #64748b, #334155);
+            border-radius: 6px;
+            border: 1px solid #1e293b;
+            position: relative;
+        }
+        .crown-ring {
+            width: 70px;
+            height: 70px;
+            border: 6px solid #475569;
+            border-radius: 50%;
+            position: absolute;
+            top: -50px;
+        }
+
+        /* 側邊按鈕 */
+        .side-btn {
+            position: absolute;
+            width: 35px;
+            height: 20px;
+            background: #334155;
+            border-radius: 4px;
+            top: 20px;
+        }
+        .side-btn.left { left: 40px; transform: rotate(-40deg); }
+        .side-btn.right { right: 40px; transform: rotate(40deg); }
+
+        /* 外圈金屬環 */
+        .outer-ring {
+            position: absolute;
+            inset: 0;
+            border-radius: 50%;
+            background: var(--metal-gradient);
+            border: 4px solid #334155;
+            box-shadow: 
+                0 0 40px rgba(0,0,0,0.6),
+                inset 0 0 20px rgba(255,255,255,0.05);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* 內錶盤 (顯示區) */
+        .inner-dial {
+            width: 320px;
+            height: 320px;
+            background: radial-gradient(circle, #0f172a 0%, #020617 100%);
+            border-radius: 50%;
+            border: 2px solid #1e293b;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* 數據掃描線效果 */
+        .scan-effect {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: conic-gradient(from 0deg, transparent, rgba(0, 210, 255, 0.1), transparent 30%);
+            animation: rotate 4s linear infinite;
+            z-index: 1;
+        }
+
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        /* 數字顯示 */
+        .time-display {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 3.5rem;
+            color: var(--neon-blue);
+            text-shadow: 0 0 20px rgba(0, 210, 255, 0.6);
+            z-index: 10;
+            letter-spacing: 2px;
+        }
+        .ms-small {
+            font-size: 1.5rem;
+            opacity: 0.6;
+        }
+
+        /* 狀態裝飾與說明文字 (參考圖中引線) */
+        .annotation {
+            position: absolute;
+            font-size: 10px;
+            color: var(--neon-blue);
+            opacity: 0.7;
+            pointer-events: none;
+            text-transform: uppercase;
+        }
+        .line-marker {
+            position: absolute;
+            border-top: 1px dashed var(--neon-blue);
+            width: 60px;
+            opacity: 0.4;
+        }
+
+        /* 按鈕控制面板 (整合進錶盤底部) */
+        .control-panel {
+            position: absolute;
+            bottom: 50px;
+            display: flex;
+            gap: 12px;
+            z-index: 20;
+        }
+
+        .btn-sci-fi {
+            background: rgba(30, 41, 59, 0.6);
+            border: 1px solid rgba(0, 210, 255, 0.3);
+            color: #fff;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            backdrop-filter: blur(4px);
+            min-width: 70px;
+        }
+        .btn-sci-fi:hover:not(:disabled) {
+            background: rgba(0, 210, 255, 0.2);
+            border-color: var(--neon-blue);
+            box-shadow: 0 0 10px rgba(0, 210, 255, 0.3);
+        }
+        .btn-sci-fi:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+        .btn-active {
+            border-color: #ff4757;
+            color: #ff4757;
+        }
+
+        /* 粒子與細節 */
+        .particles {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            z-index: 2;
+            opacity: 0.3;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-window">
+        <div class="grid-bg"></div>
+        
+        <!-- 標題欄裝飾 -->
+        <div class="absolute top-6 w-full px-8 flex justify-between items-center opacity-40 text-[10px] tracking-widest uppercase z-20">
+            <div>SYSTEM: STABLE</div>
+            <div class="flex items-center gap-2">
+                <div class="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                STOPWATCH v2.0
+            </div>
+        </div>
+
+        <div class="stopwatch-frame">
+            <!-- 頂部機械件 -->
+            <div class="top-parts">
+                <div class="crown-ring"></div>
+                <div class="crown-main"></div>
+            </div>
+            <div class="side-btn left"></div>
+            <div class="side-btn right"></div>
+
+            <!-- 主體錶盤 -->
+            <div class="outer-ring">
+                <div class="inner-dial">
+                    <div class="scan-effect"></div>
+                    
+                    <!-- 標記線裝飾 -->
+                    <div class="annotation top-[-20px] left-[-30px]" style="top: 60px; left: 40px;">時間核心處理器</div>
+                    <div class="line-marker" style="top: 80px; left: 40px; transform: rotate(-30deg);"></div>
+
+                    <div class="annotation top-[-20px] right-[-30px]" style="top: 60px; right: 40px;">動態圖數追蹤器</div>
+                    <div class="line-marker" style="top: 80px; right: 40px; transform: rotate(30deg);"></div>
+
+                    <!-- 視覺小圖表 -->
+                    <div class="absolute top-16 opacity-30">
+                        <svg width="100" height="30" viewBox="0 0 100 30">
+                            <path d="M0 20 Q 10 5, 20 20 T 40 20 T 60 20 T 80 20 T 100 20" fill="none" stroke="cyan" stroke-width="1" />
+                        </svg>
+                    </div>
+
+                    <!-- 時間數字 -->
+                    <div class="time-display mt-4">
+                        <span id="display-main">00:00</span><span id="display-ms" class="ms-small">.00</span>
+                    </div>
+
+                    <div class="text-[10px] tracking-[0.3em] opacity-40 mt-4 uppercase">Chrono Matrix</div>
+
+                    <!-- 控制按鈕面板 (擬物控制) -->
+                    <div class="control-panel">
+                        <button id="btn-main" class="btn-sci-fi">START</button>
+                        <button id="btn-reset" class="btn-sci-fi" disabled>RESET</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 底部裝飾文字 -->
+        <div class="absolute bottom-6 w-full px-10 flex justify-between items-center opacity-30 text-[10px] z-20">
+            <div>WEB INTERFACE DESIGN</div>
+            <div class="flex gap-4">
+                <span>QUERY</span>
+                <span>ABOUT</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let startTime = 0;
+        let elapsedTime = 0;
+        let timerInterval;
+        let state = 'IDLE'; 
+
+        const displayMain = document.getElementById('display-main');
+        const displayMs = document.getElementById('display-ms');
+        const btnMain = document.getElementById('btn-main');
+        const btnReset = document.getElementById('btn-reset');
+
+        function updateDisplay() {
+            const time = elapsedTime;
+            const minutes = Math.floor(time / 60000);
+            const seconds = Math.floor((time % 60000) / 1000);
+            const milliseconds = Math.floor((time % 1000) / 10);
+
+            const mStr = String(minutes).padStart(2, '0');
+            const sStr = String(seconds).padStart(2, '0');
+            const msStr = String(milliseconds).padStart(2, '0');
+
+            displayMain.textContent = `${mStr}:${sStr}`;
+            displayMs.textContent = `.${msStr}`;
+        }
+
+        function startTimer() {
+            startTime = Date.now() - elapsedTime;
+            timerInterval = setInterval(() => {
+                elapsedTime = Date.now() - startTime;
+                updateDisplay();
+            }, 10);
+            
+            state = 'RUNNING';
+            btnMain.textContent = 'PAUSE';
+            btnMain.classList.add('btn-active');
+            btnReset.disabled = false;
+        }
+
+        function pauseTimer() {
+            clearInterval(timerInterval);
+            state = 'PAUSED';
+            btnMain.textContent = 'RESUME';
+            btnMain.classList.remove('btn-active');
+        }
+
+        function resetTimer() {
+            clearInterval(timerInterval);
+            elapsedTime = 0;
+            state = 'IDLE';
+            updateDisplay();
+            btnMain.textContent = 'START';
+            btnMain.classList.remove('btn-active');
+            btnReset.disabled = true;
+        }
+
+        btnMain.addEventListener('click', () => {
+            if (state === 'IDLE' || state === 'PAUSED') {
+                startTimer();
+            } else if (state === 'RUNNING') {
+                pauseTimer();
+            }
+        });
+
+        btnReset.addEventListener('click', () => {
+            resetTimer();
+        });
+
+        updateDisplay();
+    </script>
+</body>
+</html>
